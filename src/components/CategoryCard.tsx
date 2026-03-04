@@ -38,7 +38,7 @@ const CategoryCard = ({ icon: Icon, name, description, clipCount, folderCount, s
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-xs text-green-400 font-medium">● Disponível</span>
+        <span className="text-xs font-medium" style={{ color: 'hsl(142, 71%, 55%)' }}>● Disponível</span>
         <Button
           size="sm"
           className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs rounded-lg"
