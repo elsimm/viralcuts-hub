@@ -1,0 +1,68 @@
+import { Briefcase, Tv, Laugh, Star, TrendingUp, Heart, BookOpen, Gamepad2 } from "lucide-react";
+
+export const categories = [
+  {
+    icon: Briefcase,
+    name: "Cortes Profissões",
+    description: "Clips sobre momentos marcantes de profissões no mundo",
+    clipCount: 150,
+    folderCount: 3,
+    slug: "profissoes",
+  },
+  {
+    icon: Tv,
+    name: "Cortes Family Guy",
+    description: "Cortes prontos para viralizar com momentos icônicos",
+    clipCount: 200,
+    folderCount: 4,
+    slug: "family-guy",
+  },
+  {
+    icon: Laugh,
+    name: "Cortes Memes",
+    description: "Os memes mais virais da internet em formato de cortes",
+    clipCount: 300,
+    folderCount: 5,
+    slug: "memes",
+  },
+  {
+    icon: Star,
+    name: "Cortes Famosos",
+    description: "Momentos lendários de celebridades e influenciadores",
+    clipCount: 120,
+    folderCount: 3,
+    slug: "famosos",
+  },
+  {
+    icon: TrendingUp,
+    name: "Cortes Virais",
+    description: "Cortes que explodiram nas redes sociais",
+    clipCount: 250,
+    folderCount: 4,
+    slug: "virais",
+  },
+  {
+    icon: Heart,
+    name: "Cortes Lifestyle",
+    description: "Frases e reflexões sobre vida, motivação e desenvolvimento",
+    clipCount: 180,
+    folderCount: 3,
+    slug: "lifestyle",
+  },
+  {
+    icon: BookOpen,
+    name: "Cortes Bíblicos",
+    description: "Reflexões bíblicas e ensinamentos em cortes curtos",
+    clipCount: 100,
+    folderCount: 2,
+    slug: "biblicos",
+  },
+  {
+    icon: Gamepad2,
+    name: "Cortes Gaming",
+    description: "Momentos insanos do mundo dos games",
+    clipCount: 220,
+    folderCount: 4,
+    slug: "gaming",
+  },
+];
