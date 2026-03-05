@@ -1,16 +1,17 @@
-import { Link, useLocation } from "react-router-dom";
-import { Play, User, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-
-const navItems = [
-  { label: "Dashboard", path: "/dashboard" },
-  { label: "Categorias", path: "/dashboard" },
-  { label: "Meus Downloads", path: "/downloads" },
-  { label: "Minha Conta", path: "/account" },
-];
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Play, LogOut, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const Navbar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { isAdmin, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <nav className="sticky top-0 z-50 glass border-b border-border">
@@ -23,34 +24,41 @@ const Navbar = () => {
             </Link>
 
             <div className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => (
+              <Link
+                to="/dashboard"
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  location.pathname === "/dashboard"
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                }`}
+              >
+                Categorias
+              </Link>
+              {isAdmin && (
                 <Link
-                  key={item.label}
-                  to={item.path}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    location.pathname === item.path
+                  to="/admin"
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    location.pathname === "/admin"
                       ? "text-primary bg-primary/10"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent"
                   }`}
                 >
-                  {item.label}
+                  <Shield className="w-4 h-4" />
+                  Admin
                 </Link>
-              ))}
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:block relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar categorias..."
-                className="pl-9 h-9 w-56 bg-secondary border-border text-sm text-foreground placeholder:text-muted-foreground"
-              />
-            </div>
-            <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center">
-              <User className="w-5 h-5 text-primary" />
-            </div>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="w-4 h-4 mr-1.5" />
+            Sair
+          </Button>
         </div>
       </div>
     </nav>

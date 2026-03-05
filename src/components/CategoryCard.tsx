@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { LucideIcon } from "lucide-react";
+import { Folder } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface CategoryCardProps {
-  icon: LucideIcon;
+  icon: string;
   name: string;
   description: string;
   clipCount: number;
@@ -13,7 +13,7 @@ interface CategoryCardProps {
   index: number;
 }
 
-const CategoryCard = ({ icon: Icon, name, description, clipCount, folderCount, slug, index }: CategoryCardProps) => {
+const CategoryCard = ({ name, description, clipCount, folderCount, slug, index }: CategoryCardProps) => {
   const navigate = useNavigate();
 
   return (
@@ -26,7 +26,7 @@ const CategoryCard = ({ icon: Icon, name, description, clipCount, folderCount, s
       onClick={() => navigate(`/category/${slug}`)}
     >
       <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-        <Icon className="w-6 h-6 text-primary" />
+        <Folder className="w-6 h-6 text-primary" />
       </div>
 
       <h3 className="text-lg font-heading font-semibold text-foreground mb-2">{name}</h3>
@@ -38,7 +38,7 @@ const CategoryCard = ({ icon: Icon, name, description, clipCount, folderCount, s
       </div>
 
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium" style={{ color: 'hsl(142, 71%, 55%)' }}>● Disponível</span>
+        <span className="text-xs font-medium text-primary">● Disponível</span>
         <Button
           size="sm"
           className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs rounded-lg"
