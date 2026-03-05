@@ -1,9 +1,19 @@
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import CategoryCard from "@/components/CategoryCard";
-import { categories } from "@/data/categories";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const Dashboard = () => {
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("categories").select("*").order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -23,11 +33,26 @@ const Dashboard = () => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {categories.map((cat, i) => (
-            <CategoryCard key={cat.slug} {...cat} index={i} />
-          ))}
-        </div>
+        {categories.length === 0 ? (
+          <div className="text-center py-20 text-muted-foreground">
+            Nenhuma categoria disponível ainda.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {categories.map((cat, i) => (
+              <CategoryCard
+                key={cat.id}
+                icon={cat.icon_name}
+                name={cat.name}
+                description={cat.description}
+                clipCount={cat.clip_count}
+                folderCount={cat.folder_count}
+                slug={cat.slug}
+                index={i}
+              />
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );
