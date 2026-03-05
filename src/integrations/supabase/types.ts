@@ -50,6 +50,44 @@ export type Database = {
         }
         Relationships: []
       }
+      packs: {
+        Row: {
+          category_id: string
+          clip_count: number
+          created_at: string
+          drive_link: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          clip_count?: number
+          created_at?: string
+          drive_link?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          clip_count?: number
+          created_at?: string
+          drive_link?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "packs_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
