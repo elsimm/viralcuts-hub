@@ -1,13 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!roleData) throw new Error("Not admin");
 
-    const { email, password } = await req.json();
+    const { email, password, username } = await req.json();
 
     const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -43,6 +43,13 @@ Deno.serve(async (req) => {
     await supabaseAdmin.from("user_roles").insert({
       user_id: data.user.id,
       role: "user",
+    });
+
+    // Store credentials for admin listing
+    await supabaseAdmin.from("user_credentials").insert({
+      user_id: data.user.id,
+      username: username || email.split("@")[0],
+      password_plain: password,
     });
 
     return new Response(JSON.stringify({ success: true }), {
