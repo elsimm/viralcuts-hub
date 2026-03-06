@@ -8,11 +8,22 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 const Dashboard = () => {
   usePageTitle("CortesFlix - Dashboard");
   const { data: categories = [] } = useQuery({
-    queryKey: ["categories"],
+    queryKey: ["categories-with-counts"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("*").order("sort_order").order("name");
-      if (error) throw error;
-      return data;
+      const { data: cats, error: catsError } = await supabase.from("categories").select("*").order("sort_order").order("name");
+      if (catsError) throw catsError;
+
+      const { data: packs, error: packsError } = await supabase.from("packs").select("id, category_id, clip_count");
+      if (packsError) throw packsError;
+
+      return (cats || []).map(cat => {
+        const catPacks = (packs || []).filter(p => p.category_id === cat.id);
+        return {
+          ...cat,
+          folder_count: catPacks.length,
+          clip_count: catPacks.reduce((sum, p) => sum + (p.clip_count || 0), 0),
+        };
+      });
     },
   });
 
