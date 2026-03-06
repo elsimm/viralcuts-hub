@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 const CategoryDetail = () => {
+  usePageTitle("CortesFlix - Dashboard");
   const { slug } = useParams();
   const navigate = useNavigate();
 
