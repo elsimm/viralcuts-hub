@@ -41,37 +41,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (session?.user) {
-          const expired = await checkSessionExpiry();
-          if (!expired) {
-            setUser(session.user);
-            await checkAdmin(session.user.id);
-          } else {
-            setUser(null);
-            setIsAdmin(false);
-          }
-        } else {
+    let mounted = true;
+
+    const handleSession = async (session: any) => {
+      if (!mounted) return;
+      
+      if (session?.user) {
+        const loginTime = localStorage.getItem(LOGIN_TIME_KEY);
+        if (loginTime && Date.now() - parseInt(loginTime) > SESSION_MAX_AGE) {
+          localStorage.removeItem(LOGIN_TIME_KEY);
           setUser(null);
           setIsAdmin(false);
+          setLoading(false);
+          // Sign out without awaiting to avoid re-triggering
+          supabase.auth.signOut();
+          return;
         }
-        setLoading(false);
+        setUser(session.user);
+        try {
+          const { data } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id)
+            .eq("role", "admin")
+            .maybeSingle();
+          if (mounted) setIsAdmin(!!data);
+        } catch {
+          if (mounted) setIsAdmin(false);
+        }
+      } else {
+        setUser(null);
+        setIsAdmin(false);
+      }
+      if (mounted) setLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        handleSession(session);
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        const expired = await checkSessionExpiry();
-        if (!expired) {
-          setUser(session.user);
-          await checkAdmin(session.user.id);
-        }
-      }
-      setLoading(false);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleSession(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (username: string, password: string) => {
