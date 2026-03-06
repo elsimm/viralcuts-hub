@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import CategoryCard from "@/components/CategoryCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const Dashboard = () => {
   const { data: categories = [] } = useQuery({
