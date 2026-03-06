@@ -24,6 +24,7 @@ export type Database = {
           id: string
           name: string
           slug: string
+          sort_order: number | null
           updated_at: string
         }
         Insert: {
@@ -35,6 +36,7 @@ export type Database = {
           id?: string
           name: string
           slug: string
+          sort_order?: number | null
           updated_at?: string
         }
         Update: {
@@ -46,6 +48,7 @@ export type Database = {
           id?: string
           name?: string
           slug?: string
+          sort_order?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -58,6 +61,7 @@ export type Database = {
           drive_link: string
           id: string
           name: string
+          sort_order: number | null
           updated_at: string
         }
         Insert: {
@@ -67,6 +71,7 @@ export type Database = {
           drive_link?: string
           id?: string
           name: string
+          sort_order?: number | null
           updated_at?: string
         }
         Update: {
@@ -76,6 +81,7 @@ export type Database = {
           drive_link?: string
           id?: string
           name?: string
+          sort_order?: number | null
           updated_at?: string
         }
         Relationships: [

@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const Login = () => {
+  usePageTitle("CortesFlix - Login");
   const navigate = useNavigate();
   const { signIn, user } = useAuth();
   const { toast } = useToast();

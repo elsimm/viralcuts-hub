@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, Trash2, UserPlus, Folder, Package, Pencil, Check, X } from "lucide-react";
+import { Plus, Trash2, UserPlus, Folder, Package, Pencil, Check, X, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const Admin = () => {
+  usePageTitle("CortesFlix - Dashboard");
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<"categories" | "packs" | "users">("categories");
@@ -43,7 +45,7 @@ const Admin = () => {
   const { data: categories = [] } = useQuery({
     queryKey: ["admin-categories"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("*").order("name");
+      const { data, error } = await supabase.from("categories").select("*").order("sort_order").order("name");
       if (error) throw error;
       return data;
     },
@@ -52,7 +54,7 @@ const Admin = () => {
   const { data: packs = [] } = useQuery({
     queryKey: ["admin-packs"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("packs").select("*, categories(name)").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("packs").select("*, categories(name, sort_order)").order("sort_order").order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -77,10 +79,12 @@ const Admin = () => {
   // ---- CATEGORY MUTATIONS ----
   const addCategory = useMutation({
     mutationFn: async () => {
+      const maxOrder = categories.length > 0 ? Math.max(...categories.map((c: any) => c.sort_order || 0)) + 1 : 0;
       const { error } = await supabase.from("categories").insert({
         name: catName,
         slug: catSlug || catName.toLowerCase().replace(/\s+/g, "-"),
         description: catDesc,
+        sort_order: maxOrder,
       });
       if (error) throw error;
     },
@@ -117,14 +121,31 @@ const Admin = () => {
     onSuccess: () => { toast({ title: "Categoria removida" }); invalidateAll(); },
   });
 
+  const moveCategory = useMutation({
+    mutationFn: async ({ id, direction }: { id: string; direction: "up" | "down" }) => {
+      const idx = categories.findIndex((c: any) => c.id === id);
+      if (idx < 0) return;
+      const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= categories.length) return;
+      const current = categories[idx] as any;
+      const swap = categories[swapIdx] as any;
+      await supabase.from("categories").update({ sort_order: swap.sort_order ?? swapIdx }).eq("id", current.id);
+      await supabase.from("categories").update({ sort_order: current.sort_order ?? idx }).eq("id", swap.id);
+    },
+    onSuccess: () => invalidateAll(),
+  });
+
   // ---- PACK MUTATIONS ----
   const addPack = useMutation({
     mutationFn: async () => {
+      const catPacks = packs.filter((p: any) => p.category_id === selectedCatId);
+      const maxOrder = catPacks.length > 0 ? Math.max(...catPacks.map((p: any) => p.sort_order || 0)) + 1 : 0;
       const { error } = await supabase.from("packs").insert({
         category_id: selectedCatId,
         name: packName,
         clip_count: parseInt(packClips) || 0,
         drive_link: packLink,
+        sort_order: maxOrder,
       });
       if (error) throw error;
     },
@@ -159,6 +180,21 @@ const Admin = () => {
       if (error) throw error;
     },
     onSuccess: () => { toast({ title: "Pack removido" }); invalidateAll(); },
+  });
+
+  const movePack = useMutation({
+    mutationFn: async ({ id, categoryId, direction }: { id: string; categoryId: string; direction: "up" | "down" }) => {
+      const catPacks = packs.filter((p: any) => p.category_id === categoryId);
+      const idx = catPacks.findIndex((p: any) => p.id === id);
+      if (idx < 0) return;
+      const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= catPacks.length) return;
+      const current = catPacks[idx] as any;
+      const swap = catPacks[swapIdx] as any;
+      await supabase.from("packs").update({ sort_order: swap.sort_order ?? swapIdx }).eq("id", current.id);
+      await supabase.from("packs").update({ sort_order: current.sort_order ?? idx }).eq("id", swap.id);
+    },
+    onSuccess: () => invalidateAll(),
   });
 
   // ---- USER MUTATIONS ----
@@ -202,6 +238,12 @@ const Admin = () => {
     setEditPackLink(p.drive_link);
   };
 
+  // Group packs by category
+  const packsByCategory = categories.map((cat: any) => ({
+    category: cat,
+    packs: packs.filter((p: any) => p.category_id === cat.id),
+  })).filter((group: any) => group.packs.length > 0 || true);
+
   const tabs = [
     { key: "categories" as const, label: "Categorias", icon: Folder },
     { key: "packs" as const, label: "Packs", icon: Package },
@@ -244,7 +286,7 @@ const Admin = () => {
             </div>
 
             <div className="space-y-2">
-              {categories.map((c) => (
+              {categories.map((c: any, idx: number) => (
                 <div key={c.id} className="bg-card border border-border rounded-xl px-4 py-3">
                   {editingCatId === c.id ? (
                     <div className="space-y-3">
@@ -264,10 +306,30 @@ const Admin = () => {
                     </div>
                   ) : (
                     <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-foreground font-medium">{c.name}</span>
-                        <span className="text-muted-foreground text-sm ml-2">/{c.slug}</span>
-                        {c.description && <span className="text-muted-foreground text-sm ml-2">— {c.description}</span>}
+                      <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-0.5">
+                          <Button
+                            variant="ghost" size="icon"
+                            className="h-5 w-5 text-muted-foreground hover:text-foreground"
+                            disabled={idx === 0}
+                            onClick={() => moveCategory.mutate({ id: c.id, direction: "up" })}
+                          >
+                            <ArrowUp className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="ghost" size="icon"
+                            className="h-5 w-5 text-muted-foreground hover:text-foreground"
+                            disabled={idx === categories.length - 1}
+                            onClick={() => moveCategory.mutate({ id: c.id, direction: "down" })}
+                          >
+                            <ArrowDown className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        <div>
+                          <span className="text-foreground font-medium">{c.name}</span>
+                          <span className="text-muted-foreground text-sm ml-2">/{c.slug}</span>
+                          {c.description && <span className="text-muted-foreground text-sm ml-2">— {c.description}</span>}
+                        </div>
                       </div>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" onClick={() => startEditCat(c)} className="text-muted-foreground hover:text-foreground">
@@ -297,7 +359,7 @@ const Admin = () => {
                   className="h-10 rounded-md border border-border bg-secondary px-3 text-foreground text-sm"
                 >
                   <option value="">Selecione a categoria</option>
-                  {categories.map((c) => (
+                  {categories.map((c: any) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
@@ -310,44 +372,75 @@ const Admin = () => {
               </Button>
             </div>
 
-            <div className="space-y-2">
-              {packs.map((p: any) => (
-                <div key={p.id} className="bg-card border border-border rounded-xl px-4 py-3">
-                  {editingPackId === p.id ? (
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <Input value={editPackName} onChange={(e) => setEditPackName(e.target.value)} className="bg-secondary border-border text-foreground" placeholder="Nome" />
-                        <Input value={editPackClips} onChange={(e) => setEditPackClips(e.target.value)} type="number" className="bg-secondary border-border text-foreground" placeholder="Clips" />
-                        <Input value={editPackLink} onChange={(e) => setEditPackLink(e.target.value)} className="bg-secondary border-border text-foreground" placeholder="Link Drive" />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => updatePack.mutate(p.id)}>
-                          <Check className="w-4 h-4 mr-1" /> Salvar
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setEditingPackId(null)}>
-                          <X className="w-4 h-4 mr-1" /> Cancelar
-                        </Button>
-                      </div>
+            {/* Packs grouped by category */}
+            {packsByCategory.map((group: any) => (
+              <div key={group.category.id} className="space-y-2">
+                <h3 className="text-sm font-heading font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2 pt-2">
+                  <Folder className="w-4 h-4" />
+                  Packs de {group.category.name}
+                </h3>
+                {group.packs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground pl-6 py-2">Nenhum pack nesta categoria.</p>
+                ) : (
+                  group.packs.map((p: any, idx: number) => (
+                    <div key={p.id} className="bg-card border border-border rounded-xl px-4 py-3 ml-2">
+                      {editingPackId === p.id ? (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <Input value={editPackName} onChange={(e) => setEditPackName(e.target.value)} className="bg-secondary border-border text-foreground" placeholder="Nome" />
+                            <Input value={editPackClips} onChange={(e) => setEditPackClips(e.target.value)} type="number" className="bg-secondary border-border text-foreground" placeholder="Clips" />
+                            <Input value={editPackLink} onChange={(e) => setEditPackLink(e.target.value)} className="bg-secondary border-border text-foreground" placeholder="Link Drive" />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => updatePack.mutate(p.id)}>
+                              <Check className="w-4 h-4 mr-1" /> Salvar
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingPackId(null)}>
+                              <X className="w-4 h-4 mr-1" /> Cancelar
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-0.5">
+                              <Button
+                                variant="ghost" size="icon"
+                                className="h-5 w-5 text-muted-foreground hover:text-foreground"
+                                disabled={idx === 0}
+                                onClick={() => movePack.mutate({ id: p.id, categoryId: group.category.id, direction: "up" })}
+                              >
+                                <ArrowUp className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                variant="ghost" size="icon"
+                                className="h-5 w-5 text-muted-foreground hover:text-foreground"
+                                disabled={idx === group.packs.length - 1}
+                                onClick={() => movePack.mutate({ id: p.id, categoryId: group.category.id, direction: "down" })}
+                              >
+                                <ArrowDown className="w-3 h-3" />
+                              </Button>
+                            </div>
+                            <div>
+                              <span className="text-foreground font-medium">{p.name}</span>
+                              <span className="text-muted-foreground text-sm ml-2">• {p.clip_count} clips</span>
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => startEditPack(p)} className="text-muted-foreground hover:text-foreground">
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => deletePack.mutate(p.id)} className="text-destructive hover:text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-foreground font-medium">{p.name}</span>
-                        <span className="text-muted-foreground text-sm ml-2">• {p.categories?.name} • {p.clip_count} clips</span>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => startEditPack(p)} className="text-muted-foreground hover:text-foreground">
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => deletePack.mutate(p.id)} className="text-destructive hover:text-destructive">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                  ))
+                )}
+              </div>
+            ))}
           </motion.div>
         )}
 

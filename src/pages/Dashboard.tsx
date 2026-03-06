@@ -3,12 +3,14 @@ import Navbar from "@/components/Navbar";
 import CategoryCard from "@/components/CategoryCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 const Dashboard = () => {
+  usePageTitle("CortesFlix - Dashboard");
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("*").order("name");
+      const { data, error } = await supabase.from("categories").select("*").order("sort_order").order("name");
       if (error) throw error;
       return data;
     },
