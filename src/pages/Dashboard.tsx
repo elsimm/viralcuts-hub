@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 const Dashboard = () => {
+  usePageTitle("CortesFlix - Dashboard");
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {

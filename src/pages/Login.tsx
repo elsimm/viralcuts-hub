@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 const Login = () => {
+  usePageTitle("CortesFlix - Login");
   const navigate = useNavigate();
   const { signIn, user } = useAuth();
   const { toast } = useToast();
