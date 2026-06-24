@@ -320,11 +320,15 @@ const Admin = () => {
                         <Input value={editCatSlug} onChange={(e) => setEditCatSlug(e.target.value)} className="bg-secondary border-border text-foreground" placeholder="Slug" />
                         <Input value={editCatDesc} onChange={(e) => setEditCatDesc(e.target.value)} className="bg-secondary border-border text-foreground" placeholder="Descrição" />
                       </div>
+                      <div>
+                        <label className="text-sm text-muted-foreground block mb-1">Trocar imagem (opcional)</label>
+                        <Input type="file" accept="image/*" onChange={(e) => setEditCatImage(e.target.files?.[0] ?? null)} className="bg-secondary border-border text-foreground" />
+                      </div>
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => updateCategory.mutate(c.id)}>
-                          <Check className="w-4 h-4 mr-1" /> Salvar
+                        <Button size="sm" onClick={() => updateCategory.mutate(c.id)} disabled={updateCategory.isPending}>
+                          <Check className="w-4 h-4 mr-1" /> {updateCategory.isPending ? "Salvando..." : "Salvar"}
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setEditingCatId(null)}>
+                        <Button size="sm" variant="ghost" onClick={() => { setEditingCatId(null); setEditCatImage(null); }}>
                           <X className="w-4 h-4 mr-1" /> Cancelar
                         </Button>
                       </div>
@@ -332,6 +336,9 @@ const Admin = () => {
                   ) : (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
+                        {c.image_url && (
+                          <img src={c.image_url} alt={c.name} className="w-10 h-10 rounded-lg object-cover mr-1" />
+                        )}
                         <div className="flex flex-col gap-0.5">
                           <Button
                             variant="ghost" size="icon"
