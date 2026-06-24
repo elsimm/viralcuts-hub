@@ -19,12 +19,14 @@ const Admin = () => {
   const [catName, setCatName] = useState("");
   const [catSlug, setCatSlug] = useState("");
   const [catDesc, setCatDesc] = useState("");
+  const [catImage, setCatImage] = useState<File | null>(null);
 
   // Category edit
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [editCatName, setEditCatName] = useState("");
   const [editCatSlug, setEditCatSlug] = useState("");
   const [editCatDesc, setEditCatDesc] = useState("");
+  const [editCatImage, setEditCatImage] = useState<File | null>(null);
 
   // Pack form
   const [selectedCatId, setSelectedCatId] = useState("");
