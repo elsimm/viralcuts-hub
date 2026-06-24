@@ -301,8 +301,12 @@ const Admin = () => {
                 <Input placeholder="Slug (auto)" value={catSlug} onChange={(e) => setCatSlug(e.target.value)} className="bg-secondary border-border text-foreground" />
                 <Input placeholder="Descrição" value={catDesc} onChange={(e) => setCatDesc(e.target.value)} className="bg-secondary border-border text-foreground" />
               </div>
-              <Button onClick={() => addCategory.mutate()} disabled={!catName} className="mt-3" size="sm">
-                <Plus className="w-4 h-4 mr-1" /> Adicionar
+              <div className="mt-3">
+                <label className="text-sm text-muted-foreground block mb-1">Imagem da categoria</label>
+                <Input type="file" accept="image/*" onChange={(e) => setCatImage(e.target.files?.[0] ?? null)} className="bg-secondary border-border text-foreground" />
+              </div>
+              <Button onClick={() => addCategory.mutate()} disabled={!catName || addCategory.isPending} className="mt-3" size="sm">
+                <Plus className="w-4 h-4 mr-1" /> {addCategory.isPending ? "Enviando..." : "Adicionar"}
               </Button>
             </div>
 
