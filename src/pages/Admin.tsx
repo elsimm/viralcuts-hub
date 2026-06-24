@@ -19,12 +19,14 @@ const Admin = () => {
   const [catName, setCatName] = useState("");
   const [catSlug, setCatSlug] = useState("");
   const [catDesc, setCatDesc] = useState("");
+  const [catImage, setCatImage] = useState<File | null>(null);
 
   // Category edit
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [editCatName, setEditCatName] = useState("");
   const [editCatSlug, setEditCatSlug] = useState("");
   const [editCatDesc, setEditCatDesc] = useState("");
+  const [editCatImage, setEditCatImage] = useState<File | null>(null);
 
   // Pack form
   const [selectedCatId, setSelectedCatId] = useState("");
@@ -76,21 +78,38 @@ const Admin = () => {
     queryClient.invalidateQueries({ queryKey: ["categories"] });
   };
 
+  // ---- IMAGE UPLOAD HELPER ----
+  const uploadCategoryImage = async (file: File): Promise<string> => {
+    const ext = file.name.split(".").pop();
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("category-images").upload(path, file);
+    if (upErr) throw upErr;
+    // 10-year signed URL (bucket is private)
+    const { data, error: signErr } = await supabase.storage
+      .from("category-images")
+      .createSignedUrl(path, 315360000);
+    if (signErr) throw signErr;
+    return data.signedUrl;
+  };
+
   // ---- CATEGORY MUTATIONS ----
   const addCategory = useMutation({
     mutationFn: async () => {
       const maxOrder = categories.length > 0 ? Math.max(...categories.map((c: any) => c.sort_order || 0)) + 1 : 0;
+      let imageUrl: string | null = null;
+      if (catImage) imageUrl = await uploadCategoryImage(catImage);
       const { error } = await supabase.from("categories").insert({
         name: catName,
         slug: catSlug || catName.toLowerCase().replace(/\s+/g, "-"),
         description: catDesc,
+        image_url: imageUrl,
         sort_order: maxOrder,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: "Categoria criada!" });
-      setCatName(""); setCatSlug(""); setCatDesc("");
+      setCatName(""); setCatSlug(""); setCatDesc(""); setCatImage(null);
       invalidateAll();
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -98,16 +117,18 @@ const Admin = () => {
 
   const updateCategory = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("categories").update({
+      const update: any = {
         name: editCatName,
         slug: editCatSlug,
         description: editCatDesc,
-      }).eq("id", id);
+      };
+      if (editCatImage) update.image_url = await uploadCategoryImage(editCatImage);
+      const { error } = await supabase.from("categories").update(update).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: "Categoria atualizada!" });
-      setEditingCatId(null);
+      setEditingCatId(null); setEditCatImage(null);
       invalidateAll();
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -280,8 +301,12 @@ const Admin = () => {
                 <Input placeholder="Slug (auto)" value={catSlug} onChange={(e) => setCatSlug(e.target.value)} className="bg-secondary border-border text-foreground" />
                 <Input placeholder="Descrição" value={catDesc} onChange={(e) => setCatDesc(e.target.value)} className="bg-secondary border-border text-foreground" />
               </div>
-              <Button onClick={() => addCategory.mutate()} disabled={!catName} className="mt-3" size="sm">
-                <Plus className="w-4 h-4 mr-1" /> Adicionar
+              <div className="mt-3">
+                <label className="text-sm text-muted-foreground block mb-1">Imagem da categoria</label>
+                <Input type="file" accept="image/*" onChange={(e) => setCatImage(e.target.files?.[0] ?? null)} className="bg-secondary border-border text-foreground" />
+              </div>
+              <Button onClick={() => addCategory.mutate()} disabled={!catName || addCategory.isPending} className="mt-3" size="sm">
+                <Plus className="w-4 h-4 mr-1" /> {addCategory.isPending ? "Enviando..." : "Adicionar"}
               </Button>
             </div>
 
@@ -295,11 +320,15 @@ const Admin = () => {
                         <Input value={editCatSlug} onChange={(e) => setEditCatSlug(e.target.value)} className="bg-secondary border-border text-foreground" placeholder="Slug" />
                         <Input value={editCatDesc} onChange={(e) => setEditCatDesc(e.target.value)} className="bg-secondary border-border text-foreground" placeholder="Descrição" />
                       </div>
+                      <div>
+                        <label className="text-sm text-muted-foreground block mb-1">Trocar imagem (opcional)</label>
+                        <Input type="file" accept="image/*" onChange={(e) => setEditCatImage(e.target.files?.[0] ?? null)} className="bg-secondary border-border text-foreground" />
+                      </div>
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => updateCategory.mutate(c.id)}>
-                          <Check className="w-4 h-4 mr-1" /> Salvar
+                        <Button size="sm" onClick={() => updateCategory.mutate(c.id)} disabled={updateCategory.isPending}>
+                          <Check className="w-4 h-4 mr-1" /> {updateCategory.isPending ? "Salvando..." : "Salvar"}
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setEditingCatId(null)}>
+                        <Button size="sm" variant="ghost" onClick={() => { setEditingCatId(null); setEditCatImage(null); }}>
                           <X className="w-4 h-4 mr-1" /> Cancelar
                         </Button>
                       </div>
@@ -307,6 +336,9 @@ const Admin = () => {
                   ) : (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
+                        {c.image_url && (
+                          <img src={c.image_url} alt={c.name} className="w-10 h-10 rounded-lg object-cover mr-1" />
+                        )}
                         <div className="flex flex-col gap-0.5">
                           <Button
                             variant="ghost" size="icon"

@@ -61,6 +61,7 @@ const Dashboard = () => {
                 clipCount={cat.clip_count}
                 folderCount={cat.folder_count}
                 slug={cat.slug}
+                imageUrl={cat.image_url}
                 index={i}
               />
             ))}
