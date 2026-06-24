@@ -78,21 +78,38 @@ const Admin = () => {
     queryClient.invalidateQueries({ queryKey: ["categories"] });
   };
 
+  // ---- IMAGE UPLOAD HELPER ----
+  const uploadCategoryImage = async (file: File): Promise<string> => {
+    const ext = file.name.split(".").pop();
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("category-images").upload(path, file);
+    if (upErr) throw upErr;
+    // 10-year signed URL (bucket is private)
+    const { data, error: signErr } = await supabase.storage
+      .from("category-images")
+      .createSignedUrl(path, 315360000);
+    if (signErr) throw signErr;
+    return data.signedUrl;
+  };
+
   // ---- CATEGORY MUTATIONS ----
   const addCategory = useMutation({
     mutationFn: async () => {
       const maxOrder = categories.length > 0 ? Math.max(...categories.map((c: any) => c.sort_order || 0)) + 1 : 0;
+      let imageUrl: string | null = null;
+      if (catImage) imageUrl = await uploadCategoryImage(catImage);
       const { error } = await supabase.from("categories").insert({
         name: catName,
         slug: catSlug || catName.toLowerCase().replace(/\s+/g, "-"),
         description: catDesc,
+        image_url: imageUrl,
         sort_order: maxOrder,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: "Categoria criada!" });
-      setCatName(""); setCatSlug(""); setCatDesc("");
+      setCatName(""); setCatSlug(""); setCatDesc(""); setCatImage(null);
       invalidateAll();
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
@@ -100,16 +117,18 @@ const Admin = () => {
 
   const updateCategory = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("categories").update({
+      const update: any = {
         name: editCatName,
         slug: editCatSlug,
         description: editCatDesc,
-      }).eq("id", id);
+      };
+      if (editCatImage) update.image_url = await uploadCategoryImage(editCatImage);
+      const { error } = await supabase.from("categories").update(update).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: "Categoria atualizada!" });
-      setEditingCatId(null);
+      setEditingCatId(null); setEditCatImage(null);
       invalidateAll();
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
