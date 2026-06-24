@@ -22,6 +22,7 @@ export type Database = {
           folder_count: number
           icon_name: string
           id: string
+          image_url: string | null
           name: string
           slug: string
           sort_order: number | null
@@ -34,6 +35,7 @@ export type Database = {
           folder_count?: number
           icon_name?: string
           id?: string
+          image_url?: string | null
           name: string
           slug: string
           sort_order?: number | null
@@ -46,6 +48,7 @@ export type Database = {
           folder_count?: number
           icon_name?: string
           id?: string
+          image_url?: string | null
           name?: string
           slug?: string
           sort_order?: number | null
