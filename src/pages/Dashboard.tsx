@@ -31,7 +31,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -51,7 +51,7 @@ const Dashboard = () => {
             Nenhuma categoria disponível ainda.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
             {categories.map((cat, i) => (
               <CategoryCard
                 key={cat.id}
